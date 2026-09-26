@@ -1,10 +1,21 @@
 # Terminal Text Editor Roadmap
 
-The goal is to build and understand the project yourself on Linux using C++20. Every implementation task below is planned and incomplete. We will work on one small task at a time: explain the goal and acceptance criteria, review your attempt, and check correctness and edge cases before style.
+The goal is to build and understand the project yourself on Linux using C++20. Checked items are complete; unchecked items remain pending or partial. We will work on one small task at a time: explain the goal and acceptance criteria, review your attempt, and check correctness and edge cases before style.
 
 English is the project's working language for conversations, explanations, planning, documentation, headings, code comments, user-facing editor messages, and suggested commit messages, unless you explicitly request otherwise. Arabic support is a separate, confirmed product requirement.
 
 Learning reference: [Kilo tutorial](https://viewsourcecode.org/snaptoken/kilo/). The tutorial uses C; we will learn from its sequence of ideas and discuss C++ choices as needed. Open choices are recorded in [decisions](docs/decisions.md), and the current state is recorded in [progress](docs/progress.md).
+
+## Learning sequence
+
+Use Kilo's numbered steps for concept order and one small step per session;
+these eleven milestones track product scope and acceptance, not session order.
+Current point: chapter 2, step 7 (noncanonical input). Next: step 8 (display
+keypresses). Chapters 1–2 and their step diffs were read on 2026-09-26; read
+later chapters when reached. Explain C++ adaptations and necessary departures
+before making them. Do not implement later text-model, Unicode, or feature work
+just because it appears here. The early Arabic feasibility prerequisite below
+is a deliberate project requirement beyond Kilo and remains in force.
 
 ## Arabic support: staged requirement
 
@@ -29,11 +40,27 @@ Completion criteria: documented, repeatable build and run steps that do not depe
 
 ## 2. Terminal control
 
-- [ ] 2.1 Read the current terminal settings and understand `termios`, canonical mode, and echo.
+- [x] 2.1 Read the current terminal settings and understand `termios`, canonical mode, and echo.
 - [ ] 2.2 Enable raw mode incrementally and observe each change.
-- [ ] 2.3 Save and restore the original settings using appropriate C++ resource management.
-- [ ] 2.4 Handle setup failures and non-TTY execution, and define supported exit paths.
+- [x] 2.3 Save and restore the original settings using appropriate C++ resource management.
+- [x] 2.4 Handle setup failures and non-TTY execution, and define supported exit paths.
 - [ ] 2.5 Conduct an initial Arabic shaping/bidirectional feasibility investigation before committing to text-coordinate or rendering designs. Examine mixed Arabic/English lines, punctuation, digits, and diacritics in the intended terminal environments. Record observations, likely editor versus terminal responsibilities, logical/visual position constraints, possible library needs, open risks, and implications for milestones 3–4. This is an investigation, not full editor implementation; integration remains in 10.6.
+
+Review against current code and recorded evidence (2026-09-26):
+
+| Task | Status | Evidence or remaining work |
+| --- | --- | --- |
+| 2.1 | Complete | Current settings were read and flag checks reviewed; the user's cat and editor observations distinguish canonical input from echo. |
+| 2.2 | Partial | ECHO/ICANON changes and immediate invisible q are verified. Other raw-mode flags and their observations remain pending; VMIN=1/VTIME=0 is blocking input, not the later timeout experiment. |
+| 2.3 | Complete | The user-approved explicit C++ cleanup path saves the full snapshot and restores it on q, injected EOF, read error, and injected setup failure. Pseudo-terminal comparisons verified exact restoration, including nondefault VMIN/VTIME. A scope guard is not required by this task; all normal paths after a change attempt must reach cleanup. |
+| 2.4 | Complete | Injected setup/read failures and non-TTY input produce diagnostics and status 1. Injected restoration failure is reported with status 1. Supported cleanup paths and signal/crash/exception limitations are documented; completion does not promise restoration when the restoration syscall itself fails. |
+| 2.5 | Pending | No Arabic shaping/bidirectional feasibility investigation or terminal/font matrix has been performed. |
+
+The user also manually verified the explicit-cleanup build: q without Enter
+exited immediately, shell typing returned to normal, and exit status was 0.
+This verifies observable behavior; exact attribute restoration comes from the
+separate pseudo-terminal evidence. Milestone 2 overall remains incomplete.
+Next learning step: **Kilo chapter 2, step 8 — Display keypresses**, not implemented.
 
 Tests: manually read a key in a TTY without Enter or echo. Compare terminal settings before execution and after normal exit and a controlled error. Non-TTY input must produce a clear message. Restoration after `SIGKILL` cannot be guaranteed. For 2.5, use reproducible terminal experiments and record terminal/font/settings, expected versus observed shaping and ordering, cursor positioning behavior, and unresolved questions; do not report untested editor behavior as verified.
 

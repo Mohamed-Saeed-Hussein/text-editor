@@ -16,9 +16,8 @@ These are explicit project requirements, not implementation choices assumed to h
 | Design | Separate text operations from rendering; start small and introduce abstractions when needed | `AGENTS.md` |
 | Resources | Use C++ resource management where appropriate | `AGENTS.md` |
 | Tests | Meaningful text-operation and undo/redo tests, with validation throughout the milestones | `AGENTS.md` and planning request |
-| Work sequence | Follow the eleven milestones in `ROADMAP.md` | Planning request |
+| Work sequence | Follow Kilo’s numbered concept steps, one per session unless requested otherwise; ROADMAP.md tracks broader scope and required prerequisites | Tutorial-alignment request, 2026-09-26 |
 | Local-first workflow | Work locally; no commits, pushes, GitHub repository creation, or remote configuration without an explicit request | `AGENTS.md` |
-| Current scope | Review the user's task 1.1 evidence, update progress, and guide their task 1.2 attempt; do not create the Makefile or implement editor code, commit, or push | Build-review and Makefile guidance request |
 
 ## Proposed choices — not yet agreed
 
@@ -26,7 +25,7 @@ Discuss these when the relevant task is reached. None is an approved implementat
 
 | Topic | Initial proposal or open choice | When and why to discuss it |
 | --- | --- | --- |
-| Terminal control | Evaluate `termios` with `RAII` for saving/restoring state and escape sequences for drawing | Milestones 2–3: understand Linux interfaces and resource lifetimes |
+| Screen drawing | Introduce escape sequences when reached in Kilo; terminal settings already use a local C++ guard | Milestone 3, after the required Arabic feasibility investigation |
 | Text representation | Evaluate `std::vector<std::string>` as an initial representation | Milestone 4: simple line storage, with editing costs and UTF-8 preservation considered explicitly |
 | UTF-8 storage and malformed input | Preserve valid UTF-8 without implicit normalization; decide how malformed file bytes and incomplete/invalid input sequences are handled | Tasks 4.1, 4.6, and 6.6: distinguish preserving file content from decoding input safely |
 | Unicode coordinates | Define separate byte offsets, code-point positions, grapheme boundaries, and terminal display columns; choose their representation and conversions | Task 4.6, informed by 2.5 before approval: these units are not interchangeable |
@@ -59,4 +58,13 @@ Once we agree on a choice, move it to the approved implementation decisions sect
 
 ## Approved implementation decisions
 
-- **Build tool — GNU Make:** explicitly chosen by the user for task 1.2. Start with one program target to automate the successful direct `g++` build. `CMake` was an earlier alternative; no comparative evaluation was performed. Verify initial build, no-op rebuild, and rebuild after a source change. The choice is confirmed; the user-written one-target Makefile and supplied build/rebuild evidence were reviewed and accepted for task 1.2. Build-directory organization and ignore rules remain pending in task 1.3.
+- **Build tool — GNU Make:** explicitly chosen by the user for task 1.2. Start with one program target to automate the successful direct `g++` build. `CMake` was an earlier alternative; no comparative evaluation was performed. Verify initial build, no-op rebuild, and rebuild after a source change. The choice is confirmed; the user-written one-target Makefile and supplied build/rebuild evidence were reviewed and accepted for task 1.2. Build-directory organization and ignore rules were subsequently verified in tasks 1.3–1.4.
+
+- **Terminal restoration — local C++ guard:** implemented at the user's request
+  and retained in the 2026-09-26 review. Save the complete original settings;
+  explicitly restore to report failures through exit status, with destructor
+  fallback for early returns. This adapts Kilo's global snapshot/atexit pattern.
+  VMIN=1 and VTIME=0 retain blocking reads; TCSANOW retains immediate changes
+  without discarding queued input. Signal termination remains outside supported
+  cleanup paths. No generic resource framework or signal handlers are planned
+  for the current step.
