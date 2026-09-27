@@ -1,4 +1,5 @@
 #include <cerrno>
+#include <cctype>
 #include <cstdio>
 #include <iostream>
 #include <termios.h>
@@ -56,6 +57,12 @@ int main()
                 break;
             if (character == 'q')
                 break;
+
+            const unsigned char byte = static_cast<unsigned char>(character);
+            std::cout << static_cast<int>(byte);
+            if (std::isprint(byte))
+                std::cout << " ('" << character << "')";
+            std::cout << '\n' << std::flush;
         }
     }
 

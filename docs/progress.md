@@ -2,7 +2,8 @@
 
 ## Current point
 
-[Kilo chapter 2, step 7 — Turn off canonical mode](https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html#turn-off-canonical-mode).
+[Kilo chapter 2, step 8 — Display keypresses](https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html#display-keypresses).
+Verified by agent checks and the user’s manual observation.
 Chapter 1's build setup and chapter 2's input, q, echo, restoration, and ICANON
 increments are complete with the C++ adaptations below. This is not full raw
 mode. ROADMAP.md 1.1–1.4, 2.1, 2.3, and 2.4 are complete for the documented
@@ -46,8 +47,8 @@ returned to normal, and echo $? reported 0.
 
 Result: supported step-7 behavior retained with explicit control flow. There is
 no destructor fallback for future early returns or exception unwinding. Signals,
-crashes, and SIGKILL still bypass cleanup; README explains recovery. No step 8,
-commit, or push.
+crashes, and SIGKILL still bypass cleanup; README explains recovery. No commit
+or push was made in that session.
 
 Tutorial alignment remains: chapters 1–2 and their diffs (steps 1–19) were read;
 later chapters remain unread. C++20, explicit checked cleanup, VMIN=1/VTIME=0,
@@ -63,11 +64,40 @@ as the current C++ implementation. Kept 2.2 partial: disabling ECHO/ICANON does
 not complete raw mode. Kept 2.5 pending: Arabic feasibility has not been studied.
 Task 2.1 remains complete. No later milestones were marked complete.
 
-## Next small step — Chapter 2, step 8: Display keypresses
+## 2026-09-27 — Step 8 verified
 
-Explain displaying each received byte's numeric value and a printable ASCII
-character, then ask for the user's approach before implementation unless they
-explicitly request agent implementation. Use an unsigned-char conversion when
-classifying bytes in C++; do not print control bytes literally. Keep q exit
-and restoration. Build, run, and observe ordinary keys and control keys; do not
-combine this with step 9's signal changes. This step is not implemented or tested.
+Change: after a successful read, q still exits before display. Other bytes print
+as decimal numbers, with the character appended only when std::isprint accepts
+it. C++ adaptations: unsigned-char conversion makes classification safe and
+numeric values nonnegative; std::cout formats the output and explicitly flushes
+each line. Using isprint rather than Kilo's iscntrl also avoids emitting
+nonprintable high bytes. Cleanup, error handling, and terminal flags are unchanged.
+The step-8 explanation and displayed step diff were read before editing.
+
+Agent evidence: make compiled with C++20, -Wall -Wextra -Wpedantic and no warnings.
+A temporary Python pseudo-terminal harness checked exact immediate output for
+a (97), Z (90), space (32), Ctrl-A (1), Tab (9), Enter/CR input (10), Escape (27),
+DEL (127), NUL (0), and byte 255. Only printable bytes included characters.
+Injected Up-arrow bytes produced separate 27, 91 ('['), 65 ('A') lines.
+q produced no output, exited without Enter with status 0, and restored the full
+original termios snapshot exactly. Local flags differed only by ECHO/ICANON;
+signal behavior was not changed or exercised. Non-TTY /dev/null input returned
+1 with the settings diagnostic. Earlier injected failure-path checks above were
+not rerun. No persistent test harness was added.
+
+User evidence: running ./build/text-editor and pressing a, Ctrl-A, Tab, Enter,
+then Escape displayed 97 ('a'), 1, 9, 10, and 27. The user confirmed q exited
+immediately and silently, shell typing was restored, and echo $? returned 0.
+
+Result: step 8 is verified. Reviewed ROADMAP.md terminal-control criteria:
+2.2 remains partial because the remaining raw-mode flags are not implemented;
+2.3 and 2.4 retain their previously verified supported-path status. Task 2.5
+remains pending, so milestone 2 is incomplete. Byte display does not establish
+escape-sequence decoding or complete milestone 3. ROADMAP.md's older step-7/8
+sequence text is historical; the current learning point is recorded here.
+Step 9 is not implemented or started in this checkpoint.
+
+## Next small step
+
+In a future session, review Kilo chapter 2, step 9 — Turn off Ctrl-C and Ctrl-Z
+signals — and ask for the user’s approach before implementation.
