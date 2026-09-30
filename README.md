@@ -1,100 +1,79 @@
 # Terminal Text Editor
 
-A terminal text editor project that I am building in C++ to learn
-how text editors work, using the Kilo tutorial as a reference.
+**Learning how an editor works, one terminal experiment at a time.**
 
-## Current status
+A C++20 project for Linux, following the concepts in [Build Your Own Text Editor](https://viewsourcecode.org/snaptoken/kilo/) and documenting deliberate C++ adaptations.
 
-Current learning point: [Kilo chapter 2, step 7 — Turn off canonical mode](https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html#turn-off-canonical-mode).
+`C++20` · `Linux` · `termios` · `GNU Make`
 
-The program saves the terminal settings, disables echo and canonical mode, and
-reads one byte at a time until `q` or end-of-file. One explicit cleanup block restores the
-original settings on normal exit and handled setup/input errors. It also accepts
-an already noncanonical terminal and restores that original configuration.
-Text editing is not implemented yet.
+[Try the current step](#try-the-current-step) · [Progress](docs/progress.md) · [Roadmap](ROADMAP.md) · [Terminal behavior](docs/terminal-behavior.md)
 
-## Requirements
+---
 
-- Linux
-- g++ with C++20 support
-- GNU Make
+## Current checkpoint
 
-## Build
+**Kilo chapter 2, step 8 — [Display keypresses](https://viewsourcecode.org/snaptoken/kilo/02.enteringRawMode.html#display-keypresses).**
 
-Run this command from the project root, where the Makefile is located:
+The program saves the original terminal settings, disables echo and canonical mode, and reads input one byte at a time. It displays each byte's numeric value and, when printable, the character itself.
+
+| Implemented now | Still ahead |
+| :--- | :--- |
+| Immediate byte-by-byte input | Full raw mode and escape-sequence decoding |
+| Numeric keypress display | Screen drawing and cursor navigation |
+| Checked terminal restoration on supported exit paths | Opening, editing, and saving text |
+| C++20 build with warnings enabled | Unicode editing and Arabic presentation |
+
+**Text editing is not implemented yet.** The goal at this stage is understanding the terminal boundary.
+
+## Try the current step
+
+Requirements: Linux, a C++20-capable `g++`, GNU Make, and an interactive terminal.
 
 ```bash
+git clone https://github.com/Mohamed-Saeed-Hussein/text-editor.git
+cd text-editor
 make
-```
-
-This builds the program and creates the executable at `build/text-editor`.
-
-## Run
-
-```bash
 ./build/text-editor
 ```
 
-Run in a terminal. Expected output after echo and canonical mode are disabled:
+The Makefile creates `build/text-editor`. The program starts with:
 
 ```text
 ICANON: disabled
 ECHO: disabled
 ```
 
-The program waits for one byte without a timer (`VMIN = 1`, `VTIME = 0`).
-Press `q` to quit immediately without Enter. The typed `q` stays invisible.
-Ctrl-D is now an ordinary input byte, not an EOF shortcut; use `q` to exit.
-This is an incremental terminal experiment, not full raw mode.
+Press `a`, then `Ctrl-A`. Expected output:
 
-After the program exits, check its exit status:
-
-```bash
-echo $?
+```text
+97 ('a')
+1
 ```
 
-An exit status of `0` indicates successful completion.
-Setup, input, or explicitly checked restoration failures print an error and
-exit with status `1`. Redirected non-terminal input fails the settings check.
+Press **`q`** to exit immediately without Enter. The `q` itself is not printed. At the shell prompt, `echo $?` reports `0` after a successful run; handled setup, input, or restoration failures report `1`.
 
-## Interrupted tests and recovery
+## Terminal behavior
 
-After a settings-change attempt, every normal return path must reach the
-cleanup block. Future early returns, thrown exceptions, or calls to exit() can
-bypass it. It also does not run when a default signal action terminates the process (for
-example Ctrl-C/SIGINT or SIGTERM), or on SIGKILL or a crash. Signal handling
-is outside this small experiment. If restoration itself fails, an error is
-reported; restoration cannot be guaranteed for an unavailable terminal.
+This is an incremental experiment, not full raw mode. Reads block with `VMIN = 1` and `VTIME = 0`; Ctrl-D is an ordinary byte, not an EOF shortcut.
 
-If interrupted and typing is invisible, return to the shell prompt, type
-`stty sane` even if you cannot see it, and press Enter. This restores usable
-terminal defaults, not necessarily your exact earlier custom settings.
-If the program was suspended with Ctrl-Z, use `fg` to resume it, then type
-`q` to reach cleanup and restore the original settings. If the display
-is still unusable, type `reset` and Enter or open a new terminal.
+A shared cleanup block restores the saved settings on normal exit and handled errors. Signal termination, crashes, and future control flow that bypasses this block are outside that guarantee.
 
-Manual check: run `./build/text-editor`, type `q`, confirm that it is invisible
-and the program exits without Enter. At the shell prompt, run
-`echo $?`: typing should be visible again (if echo was originally enabled),
-and the status should be `0`.
+If interrupted and shell typing becomes invisible, type `stty sane` at the shell prompt and press Enter. If suspended with Ctrl-Z, use `fg`, then `q`. Read the [full behavior and recovery notes](docs/terminal-behavior.md) before experimenting.
 
-## Deliberate adaptations
+## Design notes
 
-Use C++20, a local saved snapshot, and one explicit cleanup block instead of
-Kilo's global snapshot and `atexit` callback. Restoration retries interrupted
-calls; other failures produce an error and status 1. There is no destructor
-fallback. After attempting to change settings, record errors in exitStatus and
-leave the loop with break so cleanup runs before returning. Keep syscall checks
-now, with system-error details, rather than postponing them.
+- **Explicit control flow:** a local snapshot and checked cleanup replace Kilo's global snapshot and `atexit` callback.
+- **Immediate settings changes:** `TCSANOW` retains queued input. Type only `q` when quitting; trailing input can reach the shell.
+- **Byte classification:** conversion to `unsigned char` keeps character classification valid.
+- **Small learning steps:** the next step is reviewing Ctrl-C/Ctrl-Z signal behavior. It has not been implemented.
 
-`VMIN = 1`, `VTIME = 0` makes this step's blocking read independent of inherited
-settings. This is not Kilo's later timeout experiment. `TCSANOW` is retained:
-settings change immediately and unread input is not discarded, unlike Kilo's
-`TCSAFLUSH`. Type only `q` when quitting; any queued trailing input may reach
-the shell. The two initial status lines are temporary observation aids.
+## Documentation map
 
-## Learning reference
+| Document | Purpose |
+| :--- | :--- |
+| [Current progress](docs/progress.md) | Verified work, evidence, and the next small step |
+| [Roadmap](ROADMAP.md) | Long-term scope and acceptance criteria |
+| [Decisions](docs/decisions.md) | Design history and options |
+| [Terminal behavior](docs/terminal-behavior.md) | Cleanup limits, input details, and recovery |
 
-[Build Your Own Text Editor](https://viewsourcecode.org/snaptoken/kilo/).
-Follow its concept order and small step diffs, adapting to C++ as explained.
-Next: chapter 2, step 8, displaying keypress values; not implemented yet.
+Arabic support is planned in separate stages: UTF-8 preservation, Unicode-aware editing/history, and shaping/bidirectional presentation. None is claimed complete by the current byte-input experiment.
